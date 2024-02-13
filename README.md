@@ -13,11 +13,15 @@ Extract the contents of the zip file to your `my_components` workspace folder. C
 
 ## How to use
 
-To insert a chart, you must first prepare your data. Eggspress Chart reads **CSV files** that most spreadsheet applications and statistical packages support.
+To insert a chart, you must first prepare your data. 
+
+Eggspress Chart can read **CSV files** that most spreadsheet applications and statistical packages support. It can also import directly from Google Sheets files provided they are visible to anyone (i.e. they are public).
+
+### Using CSV files
 
 Place your CSV files in the `my_data` folder of your workspace. Create this folder if it does not exist.
 
-In the content section of a content file, create a new empty line where you would like to insert a chart and writing a Chart tag:
+In the content section of a content file, create a new empty line where you would like to insert a chart and write your Chart component:
 
 ```markdown
 
@@ -29,7 +33,33 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. In gravida libero id mo
 
 You must include the filename property and pass the filename of the CSV file you'd like to use. This file must exist in the `my_data` folder.
 
+### Using Google Sheets
+
+In your spreadsheet, click the **Share** button on the top-right corner and allow access to "Anyone with this link."
+
+Copy the `file id` for your spreadsheet, which can be found in your address bar between `/d/` and `/edit`.
+
+For example, the `file id` for "https://docs.google.com/spreadsheets/d/17GzyU1WboA5SjsmKLOJGDDXirAXE9MveIKvcy8pOC7o/edit" is "17GzyU1WboA5SjsmKLOJGDDXirAXE9MveIKvcy8pOC7o"
+
+At a minimum, we must pass values to the `filename` and `source` properties of our Chart component.
+
+For `filename`, we will pass in our `file id`. For `source`, we will pass in `"google"`.
+
+In the content section of a content file, create a new empty line where you would like to insert a chart and write your Chart component:
+
+```markdown
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. In gravida libero id molestie volutpat...
+
+<Chart filename="17GzyU1WboA5SjsmKLOJGDDXirAXE9MveIKvcy8pOC7o" source="google">**Figure 1.** MTA Daily Ridership Data</Chart>
+
+```
+
+## Customization
+
 You can also pass in additional Markdown content in between the opening (`<Chart>`) and closing (`</Chart>`) tags. This is optional.
+
+There are many other properties you can set that allow you to adjust the type of chart, how your chart's labels appear, and the color palette used.
 
 
 For detailed usage instructions including a list of all available properties and options, read the [Eggspress Chart docs](https://eggspress.org/blog/eggspress-chart).

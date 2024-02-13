@@ -1,17 +1,20 @@
 // react-chartjs-2, chart.js, csvtojson
 
-import React from 'react'
 import ComboBarLine from './Chart/ComboBarLine'
 import Bubble from './Chart/Bubble'
 import Pie from './Chart/Pie'
 import { getUserDataRecursively } from '@/app/utils'
+import { IncomingMessage } from 'http'
 
+const fs = require('fs-extra')
+const https = require('node:https')
 const csv = require('csvtojson')
 
 type ChartProps = {
   type?: string,
   title?: string,
   filename?: string,
+  source?: string,
   xTitle?: string,
   xMin?: number,
   xMax?: number,
@@ -119,15 +122,62 @@ const buildPalette = (palette: PaletteColorKeys, n: number, loop: boolean) => {
   return colors
 }
 
-const Chart = async ({type, title, filename, columns, rowStart, rowEnd, xTitle, xMin, xMax, xPrefix, xSuffix, primaryYTitle, primaryYMin, primaryYMax, primaryYPrefix, primaryYSuffix, secondaryYTitle, secondaryYMin, secondaryYMax, secondaryYPrefix, secondaryYSuffix, palette, height, orientation, pointRadius, children}: ChartProps) => {
+const fetchDataFromSheets = (filename: string) => {
+  return new Promise((resolve, reject) => {
+    const url = `https://docs.google.com/spreadsheets/d/${filename}/export?format=csv`
+    let sheetsData = ''
+
+    https.get(url, (res: IncomingMessage) => {
+      const chunks: Buffer[] = []
+      res.on('data', (chunk: Buffer) => {
+        sheetsData += chunk.toString()
+      })
+
+      res.on('end', async () => {
+        if ( sheetsData.includes('Temporary Redirect') ) {
+          const redirectUrlRegex = /HREF="([^"]+)/;
+          const match = sheetsData.match(redirectUrlRegex);
+
+          if (match && match[1]) {
+            const redirectUrl = match[1]
+
+            sheetsData = ''
+            https.get(redirectUrl, async (res: IncomingMessage) => {
+              res.on('data', (chunk: Buffer) => {
+                sheetsData += chunk.toString()
+              })
+
+              res.on('end', async () => {
+                resolve(await csv().fromString(sheetsData))
+              })
+            })
+          }
+        } else {
+          resolve(await csv().fromString(sheetsData))
+        }
+      })
+    }).on('error', (e: string) => {
+      reject(e)
+    })
+  })
+}
+
+const Chart = async ({type, title, filename, source, columns, rowStart, rowEnd, xTitle, xMin, xMax, xPrefix, xSuffix, primaryYTitle, primaryYMin, primaryYMax, primaryYPrefix, primaryYSuffix, secondaryYTitle, secondaryYMin, secondaryYMax, secondaryYPrefix, secondaryYSuffix, palette, height, orientation, pointRadius, children}: ChartProps) => {
   if (!filename) { 
     console.log(`      Info: Chart ${type ? `of type ${type}` : ''} ${title ? `with title "${title}"` : ''} is missing the "filename" property`)
     return <></>
   }
   
-  const data = await csv().fromFile(await getUserDataRecursively(filename))
+  let data
+
+  if ( source === 'google' ) {
+    data = await fetchDataFromSheets(filename)
+  } else {
+    data = await csv().fromFile(await getUserDataRecursively(filename))
+  }
+
   
-  if (!data.length) {
+  if (!data || !data.length) {
     console.log(`      Info: Chart ${filename ? `with filename ${filename}` : ''} ${type ? `of type ${type}` : ''} ${title ? `with title "${title}"` : ''} is missing data (it could be empty or misformatted)`)
     return <></>
   }
